@@ -5,11 +5,11 @@ struct DockSwichApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .frame(minWidth: 400, minHeight: 500)
+        // 起動時はウィンドウを表示しない
+        // メニューから「メインウィンドウを表示」を選択したときのみContentViewを表示
+        Settings {
+            EmptyView()
         }
-        .windowStyle(HiddenTitleBarWindowStyle())
     }
 }
 
@@ -49,8 +49,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc func showMainWindow() {
+        // ContentViewのウィンドウを動的に生成して表示
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 600),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered, defer: false)
+        window.center()
+        window.title = "DockSwich"
+        window.contentView = NSHostingView(rootView: ContentView())
+        window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-        NSApp.windows.first?.makeKeyAndOrderFront(nil)
     }
     
     @objc func quitApp() {
