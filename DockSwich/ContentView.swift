@@ -18,7 +18,7 @@ struct ContentView: View {
                 .font(.largeTitle)
                 .fontWeight(.bold)
             
-            Text("macOSのDock表示を簡単に切り替えるアプリ")
+            Text("macOSのDock有無を切り替えます")
                 .font(.headline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -108,7 +108,7 @@ struct ContentView: View {
             .padding(.bottom)
         }
         .padding()
-        .frame(width: 400, height: 600)
+        .frame(width: 500, height: 800)
         .onAppear {
             loadInitialState()
         }
