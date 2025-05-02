@@ -1,10 +1,77 @@
 import SwiftUI
 import ServiceManagement
+import AppKit
+
+struct ShortcutKey: Equatable, Codable {
+    var keyCode: UInt16
+    var modifiersRaw: UInt
+
+    var modifiers: NSEvent.ModifierFlags {
+        NSEvent.ModifierFlags(rawValue: modifiersRaw)
+    }
+
+    var displayString: String {
+        var parts: [String] = []
+        if modifiers.contains(.command) { parts.append("⌘") }
+        if modifiers.contains(.option) { parts.append("⌥") }
+        if modifiers.contains(.control) { parts.append("⌃") }
+        if modifiers.contains(.shift) { parts.append("⇧") }
+        if let key = keyCodeToString(keyCode) { parts.append(key) }
+        return parts.joined(separator: "+")
+    }
+
+    private func keyCodeToString(_ keyCode: UInt16) -> String? {
+        // 代表的なキーのみ対応
+        switch keyCode {
+        case 0: return "A"
+        case 1: return "S"
+        case 2: return "D"
+        case 3: return "F"
+        case 4: return "H"
+        case 5: return "G"
+        case 6: return "Z"
+        case 7: return "X"
+        case 8: return "C"
+        case 9: return "V"
+        case 11: return "B"
+        case 12: return "Q"
+        case 13: return "W"
+        case 14: return "E"
+        case 15: return "R"
+        case 17: return "T"
+        case 31: return "O"
+        case 32: return "U"
+        case 34: return "I"
+        case 35: return "P"
+        case 37: return "L"
+        case 38: return "J"
+        case 40: return "K"
+        case 45: return "N"
+        case 46: return "M"
+        case 36: return "Return"
+        case 49: return "Space"
+        default: return nil
+        }
+    }
+
+    init(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) {
+        self.keyCode = keyCode
+        self.modifiersRaw = modifiers.rawValue
+    }
+}
 
 struct ContentView: View {
     // ローカルの状態変数のみ使用
     @State private var isDockHidden = false
     @State private var isLoginEnabled = false
+    // コマンドキー関連の状態
+    @State private var useCommandKey = false
+    @State private var selectedCommandKey = "⌘ Command"
+    let commandKeyOptions = ["⌘ Command", "⌥ Option", "⌃ Control", "⇧ Shift"]
+    // ショートカットキー記録用
+    @State private var isRecordingShortcut = false
+    @State private var shortcutKey: ShortcutKey? = UserDefaults.standard.data(forKey: "shortcutKey").flatMap { try? JSONDecoder().decode(ShortcutKey.self, from: $0) }
+    @State private var showRestartAlert = false
     
     var body: some View {
         VStack(spacing: 20) {
@@ -92,11 +159,57 @@ struct ContentView: View {
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
+                
+                Divider()
+                    .padding(.vertical)
+                // コマンドキー設定
+                Toggle(isOn: $useCommandKey) {
+                    Text("コマンドキーを使用する")
+                }
+                .padding(.top)
+                .padding(.bottom, 4)
+                .onChange(of: useCommandKey) { _ in
+                    // ここで設定を保存したり、反映したりできる
+                }
+                Picker(selection: $selectedCommandKey, label: Text("使用するコマンドキー")) {
+                    ForEach(commandKeyOptions, id: \.self) { key in
+                        Text(key)
+                    }
+                }
+                .disabled(!useCommandKey)
+                .pickerStyle(SegmentedPickerStyle())
             }
             .padding()
             .background(Color.gray.opacity(0.1))
             .cornerRadius(8)
             .padding(.horizontal)
+            
+            // ショートカットキー設定
+            Divider().padding(.vertical)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("ショートカットキー設定:")
+                    .font(.headline)
+                HStack {
+                    Button(action: {
+                        isRecordingShortcut = true
+                    }) {
+                        Text(isRecordingShortcut ? "キー入力待ち..." : "ショートカットを記録")
+                    }
+                    .keyboardShortcut(.defaultAction)
+                    if let shortcut = shortcutKey {
+                        Text("登録済み: " + shortcut.displayString)
+                            .padding(.leading)
+                    }
+                }
+                if shortcutKey != nil {
+                    Button("ショートカットをクリア") {
+                        shortcutKey = nil
+                        UserDefaults.standard.removeObject(forKey: "shortcutKey")
+                        showRestartAlert = true
+                    }
+                    .font(.caption)
+                }
+            }
             
             Spacer()
             
@@ -109,6 +222,20 @@ struct ContentView: View {
         }
         .padding()
         .frame(width: 500, height: 800)
+        .background(ShortcutCaptureView(isRecording: $isRecordingShortcut, shortcutKey: Binding(get: { shortcutKey }, set: { newValue in
+            shortcutKey = newValue
+            if let key = newValue, let data = try? JSONEncoder().encode(key) {
+                UserDefaults.standard.set(data, forKey: "shortcutKey")
+                showRestartAlert = true
+            }
+        })))
+        .alert(isPresented: $showRestartAlert) {
+            Alert(
+                title: Text("アプリの再起動が必要です"),
+                message: Text("ショートカットキーの変更を反映するにはDockSwichを再起動してください。"),
+                dismissButton: .default(Text("OK"))
+            )
+        }
         .onAppear {
             loadInitialState()
         }
@@ -225,6 +352,35 @@ struct ContentView: View {
         } catch {
             print("Error running command: \(error)")
         }
+    }
+}
+
+// NSViewでキーイベントをキャプチャするためのラッパー
+struct ShortcutCaptureView: NSViewRepresentable {
+    @Binding var isRecording: Bool
+    @Binding var shortcutKey: ShortcutKey?
+    
+    func makeNSView(context: Context) -> NSView {
+        let view = KeyCaptureView()
+        view.onKeyDown = { event in
+            if isRecording {
+                shortcutKey = ShortcutKey(keyCode: event.keyCode, modifiers: event.modifierFlags)
+                isRecording = false
+            }
+        }
+        return view
+    }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+}
+
+class KeyCaptureView: NSView {
+    var onKeyDown: ((NSEvent) -> Void)?
+    override var acceptsFirstResponder: Bool { true }
+    override func viewDidMoveToWindow() {
+        window?.makeFirstResponder(self)
+    }
+    override func keyDown(with event: NSEvent) {
+        onKeyDown?(event)
     }
 }
 
