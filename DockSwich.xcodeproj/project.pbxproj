@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A025187C2DC4F1720027963B /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A025187B2DC4F1720027963B /* ServiceManagement.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		A02518542DC4ED940027963B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +31,7 @@
 		A02518422DC4ED920027963B /* DockSwich.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DockSwich.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A02518532DC4ED940027963B /* DockSwichTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DockSwichTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A025185D2DC4ED940027963B /* DockSwichUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DockSwichUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A025187B2DC4F1720027963B /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -52,6 +57,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A025187C2DC4F1720027963B /* ServiceManagement.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +84,7 @@
 				A02518442DC4ED920027963B /* DockSwich */,
 				A02518562DC4ED940027963B /* DockSwichTests */,
 				A02518602DC4ED940027963B /* DockSwichUITests */,
+				A025187A2DC4F1720027963B /* Frameworks */,
 				A02518432DC4ED920027963B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -90,6 +97,14 @@
 				A025185D2DC4ED940027963B /* DockSwichUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A025187A2DC4F1720027963B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A025187B2DC4F1720027963B /* ServiceManagement.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
