@@ -5,11 +5,7 @@ import AppKit
 struct ShortcutKey: Equatable, Codable {
     var keyCode: UInt16
     var modifiersRaw: UInt
-
-    var modifiers: NSEvent.ModifierFlags {
-        NSEvent.ModifierFlags(rawValue: modifiersRaw)
-    }
-
+    var modifiers: NSEvent.ModifierFlags { NSEvent.ModifierFlags(rawValue: modifiersRaw) }
     var displayString: String {
         var parts: [String] = []
         if modifiers.contains(.command) { parts.append("⌘") }
@@ -19,41 +15,18 @@ struct ShortcutKey: Equatable, Codable {
         if let key = keyCodeToString(keyCode) { parts.append(key) }
         return parts.joined(separator: "+")
     }
-
     private func keyCodeToString(_ keyCode: UInt16) -> String? {
-        // 代表的なキーのみ対応
         switch keyCode {
-        case 0: return "A"
-        case 1: return "S"
-        case 2: return "D"
-        case 3: return "F"
-        case 4: return "H"
-        case 5: return "G"
-        case 6: return "Z"
-        case 7: return "X"
-        case 8: return "C"
-        case 9: return "V"
-        case 11: return "B"
-        case 12: return "Q"
-        case 13: return "W"
-        case 14: return "E"
-        case 15: return "R"
-        case 17: return "T"
-        case 31: return "O"
-        case 32: return "U"
-        case 34: return "I"
-        case 35: return "P"
-        case 37: return "L"
-        case 38: return "J"
-        case 40: return "K"
-        case 45: return "N"
-        case 46: return "M"
-        case 36: return "Return"
-        case 49: return "Space"
+        case 0: return "A"; case 1: return "S"; case 2: return "D"; case 3: return "F"
+        case 4: return "H"; case 5: return "G"; case 6: return "Z"; case 7: return "X"
+        case 8: return "C"; case 9: return "V"; case 11: return "B"; case 12: return "Q"
+        case 13: return "W"; case 14: return "E"; case 15: return "R"; case 17: return "T"
+        case 31: return "O"; case 32: return "U"; case 34: return "I"; case 35: return "P"
+        case 37: return "L"; case 38: return "J"; case 40: return "K"; case 45: return "N"
+        case 46: return "M"; case 36: return "Return"; case 49: return "Space"
         default: return nil
         }
     }
-
     init(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) {
         self.keyCode = keyCode
         self.modifiersRaw = modifiers.rawValue
@@ -69,103 +42,66 @@ struct ContentView: View {
     @State private var showRestartAlert = false
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 0) {
+            Spacer(minLength: 24)
             Image(systemName: "dock.rectangle")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 100, height: 100)
-                .foregroundColor(.blue)
-            
+                .frame(width: 64, height: 64)
+                .foregroundColor(.accentColor)
+                .padding(.bottom, 8)
             Text("DockSwich")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            Text("macOSのDock有無を切り替えます")
-                .font(.headline)
+                .font(.title)
+                .fontWeight(.semibold)
+                .padding(.bottom, 2)
+            Text("Dockの表示・非表示を切り替え")
+                .font(.subheadline)
                 .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            
+                .padding(.bottom, 16)
             Divider()
-                .padding(.vertical)
-            
-            VStack(alignment: .leading, spacing: 10) {
-                Text("現在の状態:")
+                .padding(.bottom, 8)
+            // Dock状態
+            HStack {
+                Label(isDockHidden ? "Dock: 非表示" : "Dock: 表示中",
+                      systemImage: isDockHidden ? "eye.slash" : "eye")
                     .font(.headline)
-                
-                HStack {
-                    Text(isDockHidden ? "Dock: 非表示" : "Dock: 表示中")
-                        .font(.title2)
-                    
-                    Spacer()
-                    
-                    Image(systemName: isDockHidden ? "eye.slash" : "eye")
-                        .foregroundColor(isDockHidden ? .red : .green)
-                }
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(8)
+                Spacer()
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal)
-            
-            Button(action: {
+            .padding(.bottom, 8)
+            // Dock切り替えボタン
+            Button(isDockHidden ? "Dockを表示する" : "Dockを非表示にする") {
                 toggleDock()
-            }) {
-                Text(isDockHidden ? "Dockを表示する" : "Dockを非表示にする")
-                    .font(.headline)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(isDockHidden ? Color.green : Color.red)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
             }
-            .buttonStyle(PlainButtonStyle())
+            .frame(maxWidth: .infinity)
             .padding(.horizontal)
-            
+            .padding(.bottom, 16)
             Divider()
-                .padding(.vertical)
-            
-            // システム設定セクション
-            VStack(alignment: .leading, spacing: 15) {
-                Text("システム設定:")
-                    .font(.headline)
-                
-                // ログイン時の自動起動設定
-                Button(action: {
-                    toggleLoginItem()
-                }) {
-                    HStack {
-                        Image(systemName: isLoginEnabled ? "checkmark.square" : "square")
+            // 設定セクション
+            Form {
+                Section(header: Text("システム設定")) {
+                    Toggle(isOn: $applyDockSettingOnLogin) {
+                        Text("現在のDock設定をシステム起動時に適用")
+                    }
+                    .onChange(of: applyDockSettingOnLogin) { value in
+                        UserDefaults.standard.set(value, forKey: "applyDockSettingOnLogin")
+                    }
+                    Toggle(isOn: $isLoginEnabled) {
                         Text("ログイン時に自動的に起動")
-                        Spacer()
+                    }
+                    .onChange(of: isLoginEnabled) { _ in
+                        toggleLoginItem()
                     }
                 }
-                .buttonStyle(PlainButtonStyle())
-                
-                // Dock表示設定の保存（Toggleに変更）
-                Toggle(isOn: $applyDockSettingOnLogin) {
-                    Text("現在のDock設定をシステム起動時に適用")
-                }
-                .onChange(of: applyDockSettingOnLogin) { value in
-                    UserDefaults.standard.set(value, forKey: "applyDockSettingOnLogin")
-                }
-                
-                Divider().padding(.vertical)
-                // ショートカットキー設定
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("ショートカットキー設定:")
-                        .font(.headline)
+                Section(header: Text("ショートカットキー設定")) {
                     HStack {
-                        Button(action: {
-                            isRecordingShortcut = true
-                        }) {
+                        Button(action: { isRecordingShortcut = true }) {
                             Text(isRecordingShortcut ? "キー入力待ち..." : "ショートカットを記録")
                         }
-                        .keyboardShortcut(.defaultAction)
                         if let shortcut = shortcutKey {
                             Text("登録済み: " + shortcut.displayString)
-                                .padding(.leading)
+                                .foregroundColor(.secondary)
+                                .padding(.leading, 8)
                         }
                     }
                     if shortcutKey != nil {
@@ -178,22 +114,15 @@ struct ContentView: View {
                     }
                 }
             }
-            .padding()
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(8)
-            .padding(.horizontal)
-            
+            .frame(maxWidth: 440)
+            .padding(.top, 8)
             Spacer()
-            
-            HStack {
-                Text("メニューバーアイコンからも操作できます")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .padding(.bottom)
+            Text("メニューバーアイコンからも操作できます")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 8)
         }
-        .padding()
-        .frame(width: 500, height: 800)
+        .frame(width: 360, height: 420)
         .background(ShortcutCaptureView(isRecording: $isRecordingShortcut, shortcutKey: Binding(get: { shortcutKey }, set: { newValue in
             shortcutKey = newValue
             if let key = newValue, let data = try? JSONEncoder().encode(key) {
@@ -350,3 +279,4 @@ struct ContentView_Previews: PreviewProvider {
         ContentView()
     }
 }
+
