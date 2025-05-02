@@ -61,14 +61,9 @@ struct ShortcutKey: Equatable, Codable {
 }
 
 struct ContentView: View {
-    // ローカルの状態変数のみ使用
     @State private var isDockHidden = false
     @State private var isLoginEnabled = false
-    // コマンドキー関連の状態
-    @State private var useCommandKey = false
-    @State private var selectedCommandKey = "⌘ Command"
-    let commandKeyOptions = ["⌘ Command", "⌥ Option", "⌃ Control", "⇧ Shift"]
-    // ショートカットキー記録用
+    @State private var applyDockSettingOnLogin = UserDefaults.standard.bool(forKey: "applyDockSettingOnLogin")
     @State private var isRecordingShortcut = false
     @State private var shortcutKey: ShortcutKey? = UserDefaults.standard.data(forKey: "shortcutKey").flatMap { try? JSONDecoder().decode(ShortcutKey.self, from: $0) }
     @State private var showRestartAlert = false
@@ -148,68 +143,45 @@ struct ContentView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 
-                // Dock表示設定の保存
-                Button(action: {
-                    toggleDockSetting()
-                }) {
-                    HStack {
-                        Image(systemName: isDockHidden ? "checkmark.square" : "square")
-                        Text("現在のDock設定をシステム起動時に適用")
-                        Spacer()
-                    }
+                // Dock表示設定の保存（Toggleに変更）
+                Toggle(isOn: $applyDockSettingOnLogin) {
+                    Text("現在のDock設定をシステム起動時に適用")
                 }
-                .buttonStyle(PlainButtonStyle())
+                .onChange(of: applyDockSettingOnLogin) { value in
+                    UserDefaults.standard.set(value, forKey: "applyDockSettingOnLogin")
+                }
                 
-                Divider()
-                    .padding(.vertical)
-                // コマンドキー設定
-                Toggle(isOn: $useCommandKey) {
-                    Text("コマンドキーを使用する")
-                }
-                .padding(.top)
-                .padding(.bottom, 4)
-                .onChange(of: useCommandKey) { _ in
-                    // ここで設定を保存したり、反映したりできる
-                }
-                Picker(selection: $selectedCommandKey, label: Text("使用するコマンドキー")) {
-                    ForEach(commandKeyOptions, id: \.self) { key in
-                        Text(key)
+                Divider().padding(.vertical)
+                // ショートカットキー設定
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("ショートカットキー設定:")
+                        .font(.headline)
+                    HStack {
+                        Button(action: {
+                            isRecordingShortcut = true
+                        }) {
+                            Text(isRecordingShortcut ? "キー入力待ち..." : "ショートカットを記録")
+                        }
+                        .keyboardShortcut(.defaultAction)
+                        if let shortcut = shortcutKey {
+                            Text("登録済み: " + shortcut.displayString)
+                                .padding(.leading)
+                        }
+                    }
+                    if shortcutKey != nil {
+                        Button("ショートカットをクリア") {
+                            shortcutKey = nil
+                            UserDefaults.standard.removeObject(forKey: "shortcutKey")
+                            showRestartAlert = true
+                        }
+                        .font(.caption)
                     }
                 }
-                .disabled(!useCommandKey)
-                .pickerStyle(SegmentedPickerStyle())
             }
             .padding()
             .background(Color.gray.opacity(0.1))
             .cornerRadius(8)
             .padding(.horizontal)
-            
-            // ショートカットキー設定
-            Divider().padding(.vertical)
-            VStack(alignment: .leading, spacing: 10) {
-                Text("ショートカットキー設定:")
-                    .font(.headline)
-                HStack {
-                    Button(action: {
-                        isRecordingShortcut = true
-                    }) {
-                        Text(isRecordingShortcut ? "キー入力待ち..." : "ショートカットを記録")
-                    }
-                    .keyboardShortcut(.defaultAction)
-                    if let shortcut = shortcutKey {
-                        Text("登録済み: " + shortcut.displayString)
-                            .padding(.leading)
-                    }
-                }
-                if shortcutKey != nil {
-                    Button("ショートカットをクリア") {
-                        shortcutKey = nil
-                        UserDefaults.standard.removeObject(forKey: "shortcutKey")
-                        showRestartAlert = true
-                    }
-                    .font(.caption)
-                }
-            }
             
             Spacer()
             
@@ -327,17 +299,6 @@ struct ContentView: View {
             if !success {
                 print("Failed to set login item using SMLoginItemSetEnabled")
             }
-        }
-    }
-    
-    // Dock設定の切り替え
-    private func toggleDockSetting() {
-        isDockHidden.toggle()
-        
-        // トグル後の状態が現在のDock状態と異なる場合は適用
-        let currentState = getCurrentDockHiddenState()
-        if isDockHidden != currentState {
-            toggleDock()
         }
     }
     
